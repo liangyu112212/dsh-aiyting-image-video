@@ -2,16 +2,14 @@
 
 在 DeepSeek Harness 中查询 AIyting 模型与点数报价、设置生图参数、生成图片和找回未完成任务。插件界面显示名为 **AIyting生图/生视频**；本版开放生图，生视频仍在第二阶段计划中。
 
-当前预览版本为 v0.3.3，已在 DSH **0.2.1-rc.5** 验证。其他 DSH 版本的兼容性尚未确认。
-
-> 官网一键授权的配套服务尚未上线。当前请直接点登录卡片的“使用接入密钥连接”；“尝试官网授权”是次级入口，未开放或网络超时会明确提示并恢复按钮，不会一直停留在准备状态。
+当前版本为 **v0.3.6**，已在 Windows 的 DSH **0.2.2-rc.3** 运行时验证。通过官网账号授权即可连接。
 
 ## 安装
 
 桌面版：在 DSH 的“插件管理”页点击“添加插件”，选择安装第三方插件，填写：
 
 ```text
-github:YuHe248118/dsh-aiyting-image-video#v0.3.3
+github:liangyu112212/dsh-aiyting-image-video#v0.3.6
 ```
 
 按页面提示检查并安装。若 DSH 提示需要重启，先保存当前工作，再使用应用正常退出流程。
@@ -19,17 +17,17 @@ github:YuHe248118/dsh-aiyting-image-video#v0.3.3
 使用 CLI 管理普通 `web` profile 时，可执行：
 
 ```sh
-dsh plugin --profile web add "github:YuHe248118/dsh-aiyting-image-video#v0.3.3"
+dsh plugin --profile web add "github:liangyu112212/dsh-aiyting-image-video#v0.3.6"
 ```
 
-`web` 可替换为自己使用的普通 profile。桌面版保留的 `desktop` profile 由桌面应用管理，请使用上面的插件管理页；直接调用普通 CLI 或其 JavaScript 入口会拒绝管理该 profile。
+`web` 可替换为自己使用的普通 profile。桌面用户可在插件管理页完成安装和升级。
 
-此插件为 DSH bundle，通过 GitHub 源安装；不依赖 npm 发布，也不代表已经进入 DSH 插件目录。
+此插件以 DSH bundle 通过 GitHub 标签分发，已收录于社区插件目录。[收录记录](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/11638)
 
 ## 连接与退出
 
-1. 在 [AIyting 官网](https://aiyting.com/) 登录，并在“AI 助手连接”中创建接入密钥。
-2. 在插件登录卡片点“使用接入密钥连接”，直接粘贴密钥并点击“验证并连接”。需要生成图片时，密钥须具备生成权限；只读密钥只能使用对应查询功能。
+1. 在 DSH 侧栏打开 AIyting，点「使用 AIyting 登录」，再点「前往官网确认」。
+2. 登录官网，核对网页和插件显示的授权码，然后确认。回到插件即可查看连接结果。授权过期或拒绝后可以重新登录。
 3. 账号连接成功后，页面显示可用点数、今日已用、每日上限和实际开放的能力。
 4. 点击页面顶部“退出登录”清除本机共享连接，回到登录入口。待确认授权会取消，迟到结果不会重新登录。
 
@@ -51,7 +49,7 @@ dsh plugin --profile web add "github:YuHe248118/dsh-aiyting-image-video#v0.3.3"
 | `aiyting_image_generate` | 报价或提交图片生成 | 只有显式提交且服务端受理时 |
 | `aiyting_image_task` | 查询、等待任务或找回本机台账 | 否 |
 
-`aiyting_image_generate` 未传 `maxCredits` 时只返回报价，不提交生成。用户确认后，才可传入本次允许扣除的点数上限；报价超过上限会被拒绝。请勿让自动化流程自行放大此上限。
+`aiyting_image_generate` 未传 `maxCredits` 时返回报价和 `clientRequestId`。用户确认后，使用相同的请求号与参数，并传入本次同意的点数上限。插件与服务端都会检查上限。如果提交时断线，请保留该请求号，使用相同参数重试。
 
 任务记录按账号保存在本机。连接中断或重新打开对话后，可调用 `aiyting_image_task` 查询；不传任务号时会列出本机记录，并刷新部分未完成任务。同一请求号的重试用于找回原请求；失败退款后的新生成需要重新报价和提交。
 
@@ -76,15 +74,14 @@ npm run check
 npm test
 ```
 
-v0.3.3 在具备 DSH 安装运行时的本地环境完成 **77/77 测试，0 跳过**。新增覆盖授权接口未开放、请求或响应体不结束时的截止与取消恢复。安装版集成测试使用真实 DSH 的槽位与 MCP 客户端，对接本地模拟服务，不读取用户密钥，也不提交付费生成。
+集成测试使用真实 DSH 对话栏、原生工具执行器和官方 MCP 客户端，连接本地模拟服务。回归覆盖官网授权、完整模型目录、点数上限、请求号重试和任务退款。运行这些测试无需 AIyting 账号或点数。
 
 没有安装 DSH 的环境会明确跳过相应集成测试，其余测试可独立运行。可通过 `DSH_RUNTIME_DIR` 指向已有 DSH runtime 目录来启用集成检查；本版测试使用 Node.js 22。
 
 ## 已知范围
 
 - 本版提供图片生成；视频入口标记为“二期”。
-- 官网自动授权仍需网站配套服务上线；手动密钥连接可用。
-- “计费说明”链接到 [官网计费页](https://aiyting.com/pricing)；“官网充值入口”前往官网，需登录后点击余额打开现有充值流程。独立充值页尚未上线，不把计费说明页冒充充值页。
+- 点数卡和常用入口中的「充值」打开插件专用充值页。「计费说明」打开定价页。[官网充值](https://aiyting.com/recharge?client=dsh-plugin) · [计费说明](https://aiyting.com/pricing)
 - 会话结果以 Markdown 图片、参数与任务提示呈现。
 - 目前仅实测一个 DSH 版本，未声明所有版本或所有平台兼容。
 

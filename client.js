@@ -769,26 +769,23 @@ window.__ModuleLoader__.load({
         intro: '管理账号和点数，设定新对话的创作偏好。', account: '账号与连接', refresh: '刷新连接',
         workspace: '创作工作台', loading: '正在同步账号…', connected: '已连接', disconnected: '尚未连接', unknown: '连接待验证',
         balance: '可用点数', spent: '今日已用', limit: '每日上限', unlimited: '不限额',
-        login: '登录 / 注册 AIyting', keys: '获取或管理接入密钥', key: 'AIyting 接入密钥',
-        recharge: '计费说明', rechargeEntry: '官网充值入口', rechargeHint: '登录官网后，点击余额打开充值。', overview: '账户概览', creditsUnit: '点', synced: '余额来自当前连接的账号',
-        hint: '在官网创建接入密钥：要生图就不要勾选“仅查看模型和任务，不允许生图”；只查目录和报价时可勾选。',
+        login: '登录 / 注册 AIyting',
+        recharge: '计费说明', rechargeEntry: '充值', rechargeHint: '充值在官网独立的充值页完成，点「充值」会直接打开那一页；价格与扣费规则见计费说明。', overview: '账户概览', creditsUnit: '点', synced: '余额来自当前登录的账号',
         capModels: '模型目录', capQuote: '实时报价', capGenerate: '图片生成', capTask: '任务查询', capBalance: '点数查询',
-        capTitle: '接入能力', capabilityHint: '以当前接入密钥的权限为准', available: '可用', unavailable: '未开放',
-        shared: '密钥仅保存在本机，供本机的 AIyting 连接共用；保存后不会回显。',
+        capTitle: '可用能力', capabilityHint: '以当前登录账号的权限为准', available: '可用', unavailable: '未开放',
         connect: '验证并连接', connecting: '正在验证…', logout: '退出登录', loggingOut: '正在退出…',
         logoutHint: '清除本机共用连接并取消待确认登录；官网登录和授权仍可在官网管理。',
         cancel: '取消', saved: '连接已保存。', removed: '已退出登录。',
         defaults: '默认生图参数', defaultsHint: '新对话沿用这里的选择，已有对话不受影响。',
         defaultSaved: '默认参数已保存。', connectFirst: '连接账号后可设置默认参数。',
-        editorTag: '图片', links: '常用入口', manage: '管理连接', hideManage: '收起连接管理', keyLabel: '接入密钥',
-        connectTitle: '连接 AIyting，开始创作', connectBody: '官网一键授权待开放，当前可使用接入密钥连接。',
-        manualConnect: '使用接入密钥连接', websiteLogin: '尝试官网授权', switchAccount: '切换账号', openAuthorization: '前往官网确认',
+        editorTag: '图片', links: '常用入口', manage: '管理连接', hideManage: '收起连接管理',
+        connectTitle: '连接 AIyting，开始创作', connectBody: '用 AIyting 账号在官网确认一次授权，插件就会自动连上，不需要复制密钥。',
+        signIn: '使用 AIyting 登录', switchAccount: '切换账号', openAuthorization: '前往官网确认',
         loginStarting: '正在准备登录…', loginWaiting: '等待官网确认', loginCode: '核对授权码',
         loginCodeHint: '仅在你主动发起登录时确认，官网显示的授权码应与这里一致。',
         loginKeep: '确认后会自动连接。当前账号将在新连接验证成功后切换。',
         loginDenied: '你已拒绝本次授权。', loginExpired: '本次登录已过期，请重新发起。', loginCancelled: '本次登录已取消。',
         loginFailed: '登录暂未完成，请重试。', loginRetry: '重新登录', loginCancel: '取消本次登录',
-        advanced: '高级设置 · 手动接入密钥',
         emptyTitle: '先连接账号，再开始设置', emptyBody: '连接后，模型、线路和价格将在这里实时显示。',
         usageHint: '每日额度已用', readOnly: '只保存偏好，不会生成图片或扣费',
         stage: '面板只读取目录与报价，保存参数不会生成图片或扣费；生成由对话里的生图工具提交，提交前会先报点数。', error: '连接暂不可用，请重试。',
@@ -797,26 +794,23 @@ window.__ModuleLoader__.load({
         intro: 'Manage your account, credits and creative defaults for new conversations.', account: 'Account & connection', refresh: 'Refresh connection',
         workspace: 'Creative workspace', loading: 'Syncing account…', connected: 'Connected', disconnected: 'Not connected', unknown: 'Connection unverified',
         balance: 'Available credits', spent: 'Spent today', limit: 'Daily limit', unlimited: 'Unlimited',
-        login: 'Sign in / register', keys: 'Get or manage an access key', key: 'AIyting access key',
-        recharge: 'Pricing details', rechargeEntry: 'Top up on the website', rechargeHint: 'Sign in on the website, then select your balance to top up.', overview: 'Account overview', creditsUnit: 'credits', synced: 'Balance from your connected account',
-        hint: 'Create a key on the website. Leave the read-only option unchecked to generate images; enable it for catalog-only access.',
+        login: 'Sign in / register',
+        recharge: 'Pricing details', rechargeEntry: 'Top up', rechargeHint: 'Top up on the website’s dedicated recharge page; the Top up link opens it directly. Pricing and billing rules are in pricing details.', overview: 'Account overview', creditsUnit: 'credits', synced: 'Balance from your signed-in account',
         capModels: 'Model catalog', capQuote: 'Live quotes', capGenerate: 'Image generation', capTask: 'Task status', capBalance: 'Credit balance',
-        capTitle: 'Available capabilities', capabilityHint: 'Based on your current access key', available: 'Available', unavailable: 'Unavailable',
-        shared: 'Your key stays on this device and is shared by local AIyting connections. Saved keys are never displayed.',
+        capTitle: 'Available capabilities', capabilityHint: 'Based on your signed-in account', available: 'Available', unavailable: 'Unavailable',
         connect: 'Verify and connect', connecting: 'Verifying…', logout: 'Sign out', loggingOut: 'Signing out…',
         logoutHint: 'Clears the shared local connection and pending sign-in. Manage website sessions and authorizations on the website.',
         cancel: 'Cancel', saved: 'Connection saved.', removed: 'Signed out.',
         defaults: 'Default image settings', defaultsHint: 'New conversations inherit these choices. Existing conversations stay unchanged.',
         defaultSaved: 'Defaults saved.', connectFirst: 'Connect an account to set defaults.',
-        editorTag: 'Images', links: 'Quick links', manage: 'Manage connection', hideManage: 'Close connection settings', keyLabel: 'Access key',
-        connectTitle: 'Connect AIyting and start creating', connectBody: 'One-click website authorization is not open yet. Connect with an access key for now.',
-        manualConnect: 'Connect with an access key', websiteLogin: 'Try website authorization', switchAccount: 'Switch account', openAuthorization: 'Continue on the website',
+        editorTag: 'Images', links: 'Quick links', manage: 'Manage connection', hideManage: 'Close connection settings',
+        connectTitle: 'Connect AIyting and start creating', connectBody: 'Approve once on the website with your AIyting account and the plugin connects itself — no key to copy.',
+        signIn: 'Sign in with AIyting', switchAccount: 'Switch account', openAuthorization: 'Continue on the website',
         loginStarting: 'Preparing sign-in…', loginWaiting: 'Waiting for website approval', loginCode: 'Check the authorization code',
         loginCodeHint: 'Approve only a sign-in you started. The website must show the same code.',
         loginKeep: 'Connects automatically after approval. Your current account stays connected until verification succeeds.',
         loginDenied: 'You declined this authorization.', loginExpired: 'This sign-in expired. Please start again.', loginCancelled: 'This sign-in was cancelled.',
         loginFailed: 'Sign-in did not complete. Please retry.', loginRetry: 'Try sign-in again', loginCancel: 'Cancel sign-in',
-        advanced: 'Advanced · Manual access key',
         emptyTitle: 'Connect your account to begin', emptyBody: 'Your models, routes and live prices will appear here.',
         usageHint: 'of daily allowance used', readOnly: 'Saves preferences only. No images are generated or charged.',
         stage: 'The panel only reads catalogs and quotes; saving never creates images or charges credits. Generation runs through the chat tools and always quotes first.', error: 'Connection unavailable. Please retry.',
@@ -885,10 +879,6 @@ window.__ModuleLoader__.load({
       .aiyting-manage-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;border:0;background:transparent;color:inherit;width:100%;padding:0;text-align:left;cursor:pointer;font-size:13px;font-weight:650}
       .aiyting-connection-body{margin-top:18px;max-width:600px}
       .aiyting-connection-body p{font-size:11px;line-height:1.8;color:${T.cap};margin:0 0 12px}
-      .aiyting-key-label{display:block;color:${T.sub};font-size:11px;margin:0 0 7px}
-      .aiyting-key-input{width:100%;min-width:0;background:transparent;border:1px solid ${T.line};border-radius:9px;color:${T.text};padding:10px 11px;font-size:12px;outline:none}
-      .aiyting-key-input:focus{border-color:var(--ai-accent);box-shadow:0 0 0 3px #8b5cf60c}
-      .aiyting-connect-button{margin:10px 0 12px;width:100%;border:0;border-radius:9px;padding:10px 13px;color:#fff;background:#7c3aed;font-size:12px;font-weight:600;cursor:pointer}
       .aiyting-signin{padding:22px 24px;margin-bottom:20px}
       .aiyting-signin h2{font-size:17px}
       .aiyting-signin p{font-size:12px;line-height:1.8;color:${T.sub};margin:8px 0 0;max-width:620px}
@@ -932,14 +922,12 @@ window.__ModuleLoader__.load({
     function AccountPage({ request, manageAccount, subscribe, notify, t }) {
       const [status, setStatus] = React.useState(null)
       const [refresh, setRefresh] = React.useState(0)
-      const [keyInput, setKeyInput] = React.useState('')
       const [busy, setBusy] = React.useState(false)
       const [loading, setLoading] = React.useState(true)
       const [loggingOut, setLoggingOut] = React.useState(false)
       const [message, setMessage] = React.useState('')
       const [failure, setFailure] = React.useState('')
       const [manageOpen, setManageOpen] = React.useState(false)
-      const [manualOpen, setManualOpen] = React.useState(false)
       const [login, setLogin] = React.useState(null)
       const loginSequence = React.useRef(0)
       const accountSequence = React.useRef(0)
@@ -948,16 +936,10 @@ window.__ModuleLoader__.load({
       const loginLife = React.useRef(null)
       const loginAction = React.useRef(null)
       const mounted = React.useRef(false)
-      const manualKeyInput = React.useRef(null)
       React.useEffect(() => {
         mounted.current = true
         return () => { mounted.current = false; loginAction.current?.abort() }
       }, [])
-      React.useEffect(() => {
-        if (!manualOpen) return
-        manualKeyInput.current?.focus({ preventScroll: true })
-        manualKeyInput.current?.scrollIntoView({ block: 'nearest' })
-      }, [manualOpen])
       React.useEffect(() => {
         const controller = new AbortController()
         loginLife.current = controller
@@ -990,7 +972,7 @@ window.__ModuleLoader__.load({
       React.useEffect(() => {
         if (!login || login.phase !== 'connected' || completedLogin.current === login.attemptId) return
         completedLogin.current = login.attemptId
-        setManageOpen(false); setManualOpen(false); setMessage(t('saved')); setFailure('')
+        setManageOpen(false); setMessage(t('saved')); setFailure('')
         notify()
       }, [login, notify, t])
       React.useEffect(() => subscribe(() => { setStatus(null); setRefresh((value) => value + 1) }), [subscribe])
@@ -1010,20 +992,6 @@ window.__ModuleLoader__.load({
           .finally(() => { if (!controller.signal.aborted && sequence === accountSequence.current) setLoading(false) })
         return () => controller.abort()
       }, [request, refresh])
-      const accountChange = async (operation) => {
-        if (!status || busy) return
-        setBusy(true); setFailure(''); setMessage('')
-        const key = keyInput
-        setKeyInput('')
-        try {
-          await manageAccount(operation, { accountRevision: status.accountRevision, key })
-          if (!mounted.current) return
-          if (operation === 'connect') { setManageOpen(false); setManualOpen(false) }
-          setMessage(t(operation === 'connect' ? 'saved' : 'removed'))
-          notify()
-        } catch (error) { if (mounted.current) setFailure(error.message || t('error')) }
-        finally { if (mounted.current) setBusy(false) }
-      }
       const logout = async () => {
         if (!status || busy || loggingOut) return
         const sequence = ++loginSequence.current
@@ -1036,7 +1004,7 @@ window.__ModuleLoader__.load({
         try {
           const next = await manageAccount('logout', { accountRevision: status.accountRevision }, controller.signal)
           if (controller.signal.aborted || sequence !== loginSequence.current) return
-          setLogin(null); completedLogin.current = null; setKeyInput(''); setManageOpen(false); setManualOpen(false)
+          setLogin(null); completedLogin.current = null; setManageOpen(false)
           setStatus(next); setLoading(false); setMessage(t('removed'))
           notify()
         } catch (error) {
@@ -1062,21 +1030,12 @@ window.__ModuleLoader__.load({
         } catch (error) {
           if (mounted.current && sequence === loginSequence.current) {
             setFailure(error.message || t('loginFailed'))
-            if (operation === 'login_begin') { setLogin(null); setManualOpen(true) }
+            if (operation === 'login_begin') setLogin(null)
           }
         } finally {
           if (loginAction.current === controller) loginAction.current = null
           if (mounted.current && sequence === loginSequence.current) setBusy(false)
         }
-      }
-      const showManualConnection = () => {
-        if (loggingOut || login && login.phase === 'committing' || busy && !loginAction.current) return
-        ++loginSequence.current
-        loginAction.current?.abort(); loginAction.current = null
-        if (login && ['pending', 'connecting'].includes(login.phase)) {
-          void manageAccount('login_cancel', { attemptId: login.attemptId }).catch(() => {})
-        }
-        setBusy(false); setLogin(null); setManualOpen(true)
       }
       const number = (value) => value == null ? '—' : new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value)
       const account = status && status.account
@@ -1089,17 +1048,16 @@ window.__ModuleLoader__.load({
       const limit = account && typeof account.dailyLimitCredits === 'number' ? account.dailyLimitCredits : null
       const ratio = used != null && limit != null && limit > 0 ? Math.max(0, Math.min(100, used / limit * 100)) : null
       const external = (href, label, className = 'aiyting-text-link') => h('a', { href, target: '_blank', rel: 'noopener noreferrer', className }, label, h('span', { 'aria-hidden': true }, ' ↗'))
-      const keyForm = (id, inline = false) => h('form', { onSubmit: (event) => { event.preventDefault(); void accountChange('connect') }, 'data-aiyting-key-form': inline ? 'inline' : 'advanced' },
-        h('label', { className: 'aiyting-key-label', htmlFor: id }, t('keyLabel')),
-        h('input', { id, ref: inline ? manualKeyInput : undefined, type: 'password', value: keyInput, 'aria-label': t('key'), placeholder: t('key'), autoComplete: 'off', spellCheck: false,
-          className: 'aiyting-key-input', disabled: busy || loginPending || !status, onChange: (event) => setKeyInput(event.target.value), maxLength: 512 }),
-        h('button', { type: 'submit', className: 'aiyting-connect-button', disabled: busy || loginPending || !status || !keyInput.trim() }, busy ? t('connecting') : t('connect')))
-      const loginCard = !loading && (manualOpen || !account || loginPending || loginTerminal) ? h('section', { className: 'aiyting-card aiyting-signin', 'aria-label': t('connectTitle'), 'data-aiyting-signin': true },
+      const startLogin = () => {
+        if (loggingOut || busy || login && login.phase === 'committing') return
+        void loginChange('login_begin')
+      }
+      const loginCard = !loading && (!account || loginPending || loginTerminal) ? h('section', { className: 'aiyting-card aiyting-signin', 'aria-label': t('connectTitle'), 'data-aiyting-signin': true },
         h('h2', null, t('connectTitle')),
         h('p', null, t('connectBody')),
-        h('div', { className: 'aiyting-login-actions' },
-          h('button', { type: 'button', className: 'aiyting-login-primary', disabled: loggingOut || login && login.phase === 'committing' || !status, onClick: showManualConnection }, t('manualConnect')),
-          external('https://aiyting.com/home?view=apiKeys', t('keys'))),
+        !loginPending && !loginTerminal ? h('div', { className: 'aiyting-login-actions' },
+          h('button', { type: 'button', className: 'aiyting-login-primary', disabled: loggingOut || busy || login && login.phase === 'committing' || !status, onClick: startLogin }, t('signIn')),
+          external('https://aiyting.com/?auth=login&client=dsh-plugin', t('login'))) : null,
         loginPending ? h('div', null,
           h('div', { className: 'aiyting-login-code' }, h('span', null, t('loginCode')), h('strong', null, login.userCode)),
           h('p', null, t('loginCodeHint')),
@@ -1108,12 +1066,11 @@ window.__ModuleLoader__.load({
             external(login.verificationUri, t('openAuthorization'), 'aiyting-login-primary'),
             h('button', { type: 'button', className: 'aiyting-login-secondary', disabled: busy || login.phase === 'committing', onClick: () => void loginChange('login_cancel') }, t('loginCancel'))),
           account ? h('p', null, t('loginKeep')) : null) :
-          h('div', null,
-            loginTerminal ? h('div', { className: 'aiyting-login-status', role: 'status' },
-              t(login.phase === 'denied' ? 'loginDenied' : login.phase === 'expired' ? 'loginExpired' : login.phase === 'cancelled' ? 'loginCancelled' : 'loginFailed')) : null,
+          loginTerminal ? h('div', null,
+            h('div', { className: 'aiyting-login-status', role: 'status' },
+              t(login.phase === 'denied' ? 'loginDenied' : login.phase === 'expired' ? 'loginExpired' : login.phase === 'cancelled' ? 'loginCancelled' : 'loginFailed')),
             h('div', { className: 'aiyting-login-actions' },
-              h('button', { type: 'button', className: 'aiyting-login-secondary', disabled: busy || !status, onClick: () => void loginChange('login_begin') }, busy ? t('loginStarting') : t(loginTerminal ? 'loginRetry' : 'websiteLogin')))),
-        manualOpen ? h('div', { className: 'aiyting-connection-body' }, keyForm('aiyting-login-access-key', true), h('p', null, t('hint')), h('p', null, t('shared'))) : null) : null
+              h('button', { type: 'button', className: 'aiyting-login-secondary', disabled: busy || !status, onClick: startLogin }, t('loginRetry')))) : null) : null
       const metric = (label, value, primary, footer, raw) => h('section', { className: 'aiyting-metric' + (primary ? ' is-balance' : ''), 'aria-label': t(label) },
         h('div', { className: 'aiyting-metric-label' }, t(label)),
         h('div', { className: 'aiyting-metric-value' + (loading && !account ? ' aiyting-skeleton' : ''), title: raw == null ? undefined : String(raw) },
@@ -1141,7 +1098,7 @@ window.__ModuleLoader__.load({
           loginCard,
           h('div', { className: 'aiyting-metrics', 'aria-label': t('overview') },
             metric('balance', number(account && account.balanceCredits), true,
-              [h('span', { key: 'hint' }, t('synced')), external('https://aiyting.com/pricing', t('recharge'))], account && account.balanceCredits),
+              [h('span', { key: 'hint' }, t('synced')), external('https://aiyting.com/recharge?client=dsh-plugin', t('rechargeEntry'))], account && account.balanceCredits),
             metric('spent', number(used), false, ratio == null ? h('span', null, '—') :
               h('div', { style: { width: '100%' } },
                 h('span', null, number(ratio) + '% · ' + t('usageHint')),
@@ -1172,20 +1129,16 @@ window.__ModuleLoader__.load({
                   }))),
               h('section', { className: 'aiyting-card', 'aria-label': t('links') },
                 h('h2', null, t('links')), h('nav', { className: 'aiyting-links' },
-                  external('https://aiyting.com/', t('login'), ''),
-                  external('https://aiyting.com/home?view=apiKeys', t('keys'), ''),
-                  external('https://aiyting.com/pricing', t('recharge'), ''),
-                  external('https://aiyting.com/', t('rechargeEntry'), '')),
+                  external('https://aiyting.com/?auth=login&client=dsh-plugin', t('login'), ''),
+                  external('https://aiyting.com/recharge?client=dsh-plugin', t('rechargeEntry'), ''),
+                  external('https://aiyting.com/pricing', t('recharge'), '')),
                 h('p', { className: 'aiyting-card-description' }, t('rechargeHint'))),
               h('section', { className: 'aiyting-card', 'data-aiyting-connection': true },
                 h('button', { type: 'button', className: 'aiyting-manage-toggle', 'aria-expanded': expanded, 'aria-controls': 'aiyting-connection-settings',
                   onClick: () => setManageOpen((value) => !value) }, h('span', null, t('account')), h('span', { 'aria-hidden': true, style: { color: T.cap } }, expanded ? '−' : '+')),
                 expanded ? h('div', { className: 'aiyting-connection-body', id: 'aiyting-connection-settings' },
                   account ? h('div', null, h('p', null, t('loginKeep')),
-                    h('button', { type: 'button', className: 'aiyting-login-secondary', disabled: busy || loginPending || !status, onClick: () => void loginChange('login_begin') }, t('switchAccount'))) : null,
-                  !manualOpen ? h('details', { className: 'aiyting-advanced' }, h('summary', null, t('advanced')),
-                    keyForm('aiyting-access-key'),
-                    h('p', null, t('hint')), h('p', null, t('shared'))) : null) : null))),
+                    h('button', { type: 'button', className: 'aiyting-login-secondary', disabled: busy || loginPending || !status, onClick: startLogin }, t('switchAccount'))) : null) : null))),
           h('footer', { className: 'aiyting-footer' }, h('span', null, t('readOnly')),
             h('span', { className: 'aiyting-footer-mark' }, h(BrandMark, { size: 11, width: 19 }), 'AIyting'))))
     }
@@ -1208,7 +1161,7 @@ window.__ModuleLoader__.load({
             timer = setTimeout(() => {
               controller.abort()
               reject(new Error(operation === 'login_begin'
-                ? 'AIyting 官网授权暂不可用或连接超时，请使用接入密钥连接。'
+                ? 'AIyting 官网授权暂不可用或连接超时，请稍后重试。'
                 : 'AIyting 请求超时，请重试。'))
             }, operation === 'login_begin' ? 20000 : 45000)
           })

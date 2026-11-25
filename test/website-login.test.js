@@ -398,13 +398,35 @@ test('Host disposal settles a grant whose transport never observes its abort sig
   assert.equal(f.commits.length, 0)
 })
 
-test('an unavailable website authorization endpoint explains manual connection without leaking its body', async () => {
+test('an unavailable website authorization endpoint keeps the account and points at retry or support', async () => {
   const f = fixture({ deviceResponse: new Response('server-secret-error: not deployed', { status: 404 }) })
   const error = await f.begin().catch(value => value)
   assert.match(error.message, /尚未开放/)
-  assert.match(error.message, /接入密钥/)
+  assert.match(error.message, /稍后重试|联系站点支持/)
+  assert.doesNotMatch(error.message, /接入密钥|高级设置|密钥/)
   assertPublic({ message: error.message })
   assert.equal(await f.login.status(), null)
+  assert.equal(f.saved(), 'working-old-key')
+  assert.equal(f.commits.length, 0)
+})
+
+test('a malformed authorization body reports a retryable error without leaking the body or offering a key form', async () => {
+  const f = fixture({ deviceResponse: new Response('<html>not json</html>', { status: 200 }) })
+  const error = await f.begin().catch(value => value)
+  assert.match(error.message, /返回异常/)
+  assert.doesNotMatch(error.message, /接入密钥|高级设置|not json/)
+  assertPublic({ message: error.message })
+  assert.equal(f.saved(), 'working-old-key')
+  assert.equal(f.commits.length, 0)
+})
+
+test('a server error without a readable error field stays user-visible and key-free', async () => {
+  const f = fixture({ deviceResponse: Response.json({ detail: 'upstream exploded' }, { status: 500 }) })
+  const error = await f.begin().catch(value => value)
+  assert.match(error.message, /暂不可用/)
+  assert.match(error.message, /稍后重试|联系站点支持/)
+  assert.doesNotMatch(error.message, /接入密钥|高级设置|exploded/)
+  assertPublic({ message: error.message })
   assert.equal(f.saved(), 'working-old-key')
   assert.equal(f.commits.length, 0)
 })

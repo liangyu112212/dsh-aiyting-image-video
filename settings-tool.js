@@ -24,10 +24,10 @@ export async function registerSettingsTool(ctx, dispatch) {
       if (!exec.agent?.session?.id) throw new Error('AIyting 参数操作需要当前对话。')
       const sessionId = args.scope === 'default' ? null : exec.agent.session.id
       const common = { sessionId, accountRevision: args.accountRevision }
-      if (args.action === 'get') return dispatch('get_preferences', common, exec.signal)
-      if (args.action === 'quote') return dispatch('estimate_cost', { ...args.settings, accountRevision: args.accountRevision }, exec.signal)
+      if (args.action === 'get') return dispatch('get_preferences', common, exec.signal, exec)
+      if (args.action === 'quote') return dispatch('estimate_cost', { ...args.settings, accountRevision: args.accountRevision }, exec.signal, exec)
       return dispatch('save_preferences', { ...common, settings: args.settings, revision: args.revision,
-        receipt: args.receipt, makeDefault: args.scope === 'default' || args.makeDefault === true }, exec.signal)
+        receipt: args.receipt, makeDefault: args.scope === 'default' || args.makeDefault === true }, exec.signal, exec)
     },
   }))
 }

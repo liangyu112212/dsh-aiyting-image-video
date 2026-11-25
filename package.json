@@ -1,17 +1,17 @@
 {
   "name": "@aiyting/dsh-image-video",
-  "version": "0.3.3",
+  "version": "0.3.6",
   "private": true,
   "description": "AIyting sidebar account page, persistent conversation image settings, live MCP quotes and a crash-safe image generation ledger",
   "license": "UNLICENSED",
   "author": "AIyting",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YuHe248118/dsh-aiyting-image-video.git"
+    "url": "git+https://github.com/liangyu112212/dsh-aiyting-image-video.git"
   },
-  "homepage": "https://github.com/YuHe248118/dsh-aiyting-image-video#readme",
+  "homepage": "https://github.com/liangyu112212/dsh-aiyting-image-video#readme",
   "bugs": {
-    "url": "https://github.com/YuHe248118/dsh-aiyting-image-video/issues"
+    "url": "https://github.com/liangyu112212/dsh-aiyting-image-video/issues"
   },
   "keywords": ["dsh-plugin", "deepseek-harness", "aiyting", "image-generation", "mcp"],
   "engines": {

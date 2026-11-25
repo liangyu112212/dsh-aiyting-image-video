@@ -61,6 +61,50 @@ test('a finished batch keeps its images so an interrupted turn can recover them'
   assert.equal(listed.batches[0].media[0], 'https://example.test/a.png')
 })
 
+test('quote and paid submit use identical parameters, account scope, ceiling and request ID', async () => {
+  const { h, generate } = await scenario(() => task())
+  const calls = []
+  const execute = h.ctx.tools.execute
+  h.ctx.tools.execute = (call) => { calls.push(call); return execute(call) }
+  const prompt = '海边灯塔'
+  const approved = await generate.execute({ prompt }, exec)
+  assert.match(approved.text, new RegExp(approved.clientRequestId))
+  assert.equal(calls.some((call) => call.name.endsWith('aiyting_generate')), false)
+  await generate.execute({ prompt, maxCredits: 4, clientRequestId: approved.clientRequestId }, exec)
+  const [quoteCall, paidCall] = calls.slice(-2)
+  assert.equal(quoteCall.arguments.prompt, prompt)
+  assert.deepEqual(paidCall.arguments, { ...quoteCall.arguments, max_credits: 4, client_request_id: approved.clientRequestId })
+  assert.equal(paidCall.agent, exec.agent)
+})
+
+test('an invalid request ID, unavailable explicit selection or insufficient ceiling never submits', async () => {
+  const { generate, names } = await scenario(() => task())
+  for (const args of [{ clientRequestId: 'x' }, { modelId: 'missing' }, { routeId: 'missing' }, { resolution: '8K' }, { maxCredits: 1 }]) {
+    await assert.rejects(generate.execute({ prompt: '海边灯塔', maxCredits: 4, ...args }, exec), /请求号|模型|线路|报价/)
+  }
+  assert.ok(names.every((name) => !name.endsWith('aiyting_generate')))
+})
+
+test('a scoped write restriction is respected during submission', async () => {
+  const { h, generate, names } = await scenario(() => task())
+  h.ctx.tools.get = (name, agent) => !(agent === exec.agent && name.endsWith('aiyting_generate'))
+  await assert.rejects(generate.execute({ prompt: '海边灯塔', maxCredits: 4 }, exec))
+  assert.ok(names.every((name) => !name.endsWith('aiyting_generate')))
+})
+
+test('reads current batch billing and retrieves image links without inlining binary data', async () => {
+  const { ledger } = await scenario((call) => {
+    assert.equal(call.arguments.include_images, false)
+    return { batchId: 'batch-1234', status: 'failed', terminal: true,
+      billing: { batchChargedCredits: 4, batchRefundedCredits: 4, remainingCredits: 0 } }
+  })
+  const result = await ledger.execute({ batchId: 'batch-1234' }, exec)
+  assert.equal(result.chargedCredits, 4)
+  assert.equal(result.refundedCredits, 4)
+  assert.equal(result.remainingCredits, 0)
+  assert.match(result.text, /退回 4 点/)
+})
+
 test('an unusable task number is rejected before any MCP call', async () => {
   const { names, ledger } = await scenario(() => task())
   await assert.rejects(() => ledger.execute({ batchId: 'x' }, exec), /任务号无效/)

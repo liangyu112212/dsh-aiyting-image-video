@@ -21,7 +21,7 @@ export function websiteLogin({ endpoint, identity, commit, signal, fetcher = fet
     const combined = AbortSignal.any([...(cleanup ? [] : [signal]), ...(extraSignal ? [extraSignal] : []), timeout.signal])
     let timedOut = false, timer, onAbort
     const cancelled = new Promise((_, reject) => {
-      onAbort = () => reject(failure(timedOut ? '官网登录请求超时，请重试或使用接入密钥连接。' : '登录请求已取消或连接已关闭。'))
+      onAbort = () => reject(failure(timedOut ? '官网登录请求超时，请检查网络后重试。' : '登录请求已取消或连接已关闭。'))
       if (combined.aborted) onAbort()
       else combined.addEventListener('abort', onAbort, { once: true })
     })
@@ -36,13 +36,13 @@ export function websiteLogin({ endpoint, identity, commit, signal, fetcher = fet
       })
       if (response.status === 404 || response.status === 405) {
         void response.body?.cancel().catch(() => {})
-        throw failure('官网一键授权尚未开放，请使用接入密钥连接。')
+        throw failure('官网登录尚未开放，请稍后重试或联系站点支持。')
       }
       const text = await response.text()
       if (text.length > 16384) throw failure('登录服务返回异常，请稍后重试。')
       let data
-      try { data = JSON.parse(text) } catch { throw failure('官网授权暂不可用，请使用高级设置中的接入密钥。') }
-      if (!response.ok && typeof data.error !== 'string') throw failure('官网授权暂不可用，请使用高级设置中的接入密钥。')
+      try { data = JSON.parse(text) } catch { throw failure('官网授权返回异常，请稍后重试。') }
+      if (!response.ok && typeof data.error !== 'string') throw failure('官网授权暂不可用，请稍后重试或联系站点支持。')
       // A transport may deliver a grant after the local deadline already settled.
       // Clean up that unapproved grant without allowing it to become a new attempt.
       if (combined.aborted && path === 'device' && typeof data.device_code === 'string' && /^[A-Za-z0-9_-]{24,256}$/.test(data.device_code)) {
@@ -81,7 +81,7 @@ export function websiteLogin({ endpoint, identity, commit, signal, fetcher = fet
       if (typeof data.device_code === 'string') await post('cancel', { device_code: data.device_code }, undefined, true).catch(() => {})
       throw failure('登录已取消或连接已关闭。')
     }
-    if (data.error) throw failure('官网授权暂不可用，请使用高级设置中的接入密钥。')
+    if (data.error) throw failure('官网授权暂不可用，请稍后重试或联系站点支持。')
     let uri
     try { uri = new URL(data.verification_uri_complete) } catch { throw failure('官网授权地址无效。') }
     if (uri.origin !== origin || uri.pathname !== '/plugin-authorize' || uri.username || uri.password || uri.hash

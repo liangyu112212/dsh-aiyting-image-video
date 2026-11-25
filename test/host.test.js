@@ -90,7 +90,7 @@ test('foreign same-name tools cannot supply a missing private connection', async
   h.ctx.tools.get = (name) => names.includes(name) ? {} : undefined
   const catalog = await h.run('list_models')
   assert.equal(catalog.ok, false)
-  assert.match(catalog.error.message, /MCP 暂未连接成功/)
+  assert.match(catalog.error.message, /暂时连不上，请先刷新目录/)
   const account = await h.run('get_account')
   assert.equal(account.value.account, null)
   assert.deepEqual(account.value.capabilities, { models: false, quote: false, balance: false, generate: false, task: false })
@@ -334,5 +334,29 @@ test('website authorization is unavailable to general dispatch and agent tools',
   assert.deepEqual([...h.definitions.keys()], ['aiyting_image_settings', 'aiyting_image_catalog', 'aiyting_image_generate', 'aiyting_image_task'])
   assert.equal(h.calls.length, 0)
   assert.equal(h.verified.length, 0)
+  h.dispose()
+})
+
+test('account read failure points at refresh, re-authorization and support instead of an access key', async () => {
+  const h = await harness(undefined, { failTools: ['aiyting_get_balance'] })
+  const result = await h.run('get_account')
+  assert.equal(result.ok, true)
+  assert.equal(result.value.account, null)
+  assert.match(result.value.connectionError, /刷新/)
+  assert.match(result.value.connectionError, /重新登录|重新授权/)
+  assert.match(result.value.connectionError, /联系支持/)
+  assert.ok(!/catalog:read|account:read|钥匙|权限/.test(result.value.connectionError))
+  h.dispose()
+})
+
+test('an unexposed tool asks for a refresh or re-authorization without exposing key internals', async () => {
+  const h = await harness(undefined, { hideTools: ['aiyting_list_models'] })
+  const result = await h.run('list_models')
+  assert.equal(result.ok, false)
+  assert.match(result.error.message, /刷新目录/)
+  assert.match(result.error.message, /重新登录|重新授权/)
+  assert.match(result.error.message, /联系支持/)
+  assert.ok(!/catalog:read|account:read|钥匙/.test(result.error.message))
+  assert.equal(h.calls.length, 0)
   h.dispose()
 })

@@ -53,10 +53,10 @@ for (const name of assetNames.filter((name) => /^index-.*\.js$/.test(name))) {
   const tail = source.slice(conflict).match(exportMarker)
   assert.ok(tail, 'locate installed SlotCore export boundary')
   const end = conflict + tail.index
-  const prefix = source.slice(Math.max(0, start.index - 100), start.index)
-  const empty = prefix.match(/const ([\w$]+)=Object\.freeze\(\[\]\);$/)
+  const prefix = source.slice(Math.max(0, start.index - 2000), start.index)
+  const empty = [...prefix.matchAll(/const [\w$]+=Object\.freeze\(\[\]\);/g)].at(-1)
   assert.ok(empty, 'locate installed core empty-array constant')
-  const extracted = `const ${empty[1]}=Object.freeze([]);${source.slice(start.index, end)};globalThis.SlotCore=${className}`
+  const extracted = `${prefix.slice(empty.index)}${source.slice(start.index, end)};globalThis.SlotCore=${className}`
   const sandbox = { queueMicrotask }
   vm.runInNewContext(extracted, sandbox, { filename: `${file}#SlotCore`, timeout: 2000 })
   installedCore = { Class: sandbox.SlotCore, file, sha256: createHash('sha256').update(extracted).digest('hex') }
@@ -66,12 +66,12 @@ assert.ok(installedCore, 'installed frontend containing SlotCore must be present
 
 function contract(name) {
   const escaped = name.replaceAll('.', '\\.')
-  const found = conversation.match(new RegExp(`"${escaped}": \\{\\s*kind: "([^"]+)",\\s*scope: "([^"]+)"`))
+  const found = conversation.match(new RegExp('["`]' + escaped + '["`]:\\s*\\{\\s*kind:\\s*["`]([^"`]+)["`],\\s*scope:\\s*["`]([^"`]+)["`]'))
   assert.ok(found, `installed declaration of ${name}`)
   return { kind: found[1], scope: found[2] }
 }
 
-const voiceRegistration = voice.match(/ctx\.slots\.inject\("conversation\.input\.activity",[\s\S]*?\}, VoiceInput\)\);/)?.[0]
+const voiceRegistration = voice.match(/ctx\.slots\.inject\(["`]conversation\.input\.activity["`],[\s\S]*?\},\s*VoiceInput\)\);/)?.[0]
 assert.ok(voiceRegistration, 'extract official installed voice registration without evaluating its speech code')
 
 function registry() {

@@ -45,9 +45,9 @@ export function normalizeTask(data) {
     batchId: first(raw.batchId, raw.batch_id, raw.id),
     status,
     terminal: raw.terminal === true || ['succeeded', 'success', 'completed', 'failed', 'cancelled', 'canceled'].includes(status || ''),
-    chargedCredits: number(raw.chargedCredits ?? raw.credits),
-    refundedCredits: number(raw.refundedCredits ?? raw.refundCredits),
-    remainingCredits: number(raw.remainingCredits ?? raw.balanceCredits),
+    chargedCredits: number(raw.billing?.batchChargedCredits ?? raw.batchChargedCredits ?? raw.chargedCredits ?? raw.credits),
+    refundedCredits: number(raw.billing?.batchRefundedCredits ?? raw.refundedCredits ?? raw.refundCredits),
+    remainingCredits: number(raw.billing?.remainingCredits ?? raw.remainingCredits ?? raw.balanceCredits),
     totalChildren: Number.isInteger(raw.totalChildren) ? raw.totalChildren : children.length,
     media,
     children: children.map(({ routeName, status: childStatus, error }) => ({ routeName, status: childStatus, error })),
@@ -60,16 +60,21 @@ export function resolveSettings(overrides = {}, stored = null, catalog) {
   const models = catalog.models.filter((model) => catalog.routes.some((route) => route.modelId === model.id && route.available))
   if (!models.length) throw new Error('AIyting 目录里没有可用线路，请稍后刷新目录。')
   const wanted = first(overrides.modelId, stored?.modelId && stored.modelId)
-  let model = models.find((item) => item.id === wanted) || models[0]
+  const model = models.find((item) => item.id === wanted) || models[0]
+  if (overrides.modelId != null && overrides.modelId !== model.id) throw new Error('AIyting 指定的模型当前不可用，请从目录重新选择。')
   const routes = catalog.routes.filter((route) => route.modelId === model.id && route.available)
   const wantedRoute = first(overrides.routeId, stored?.routeId && (routes.some((route) => route.id === stored.routeId) ? stored.routeId : null))
   const route = routes.find((item) => item.id === wantedRoute) || routes.find((item) => item.recommended) || routes[0]
+  if (overrides.routeId != null && overrides.routeId !== route.id) throw new Error('AIyting 指定的线路当前不可用，请从目录重新选择。')
   const ratios = route.ratios.length ? route.ratios : ['1:1']
   const resolutions = route.resolutions.length ? route.resolutions : ['标准']
   const ratio = [overrides.aspectRatio, stored?.aspectRatio].find((value) => ratios.includes(value)) || [route.defaults?.ratio].find((value) => ratios.includes(value)) || ratios[0]
   const resolution = [overrides.resolution, stored?.resolution].find((value) => resolutions.includes(value)) || [route.defaults?.resolution].find((value) => resolutions.includes(value)) || resolutions[0]
   const quality = [overrides.quality, stored?.quality].find((value) => route.qualities?.includes(value)) || null
   const count = [overrides.count, stored?.count].find((value) => Number.isInteger(value) && value >= 1 && value <= 4) || 1
+  for (const [field, selected] of Object.entries({ aspectRatio: ratio, resolution, quality, count })) {
+    if (overrides[field] != null && overrides[field] !== selected) throw new Error(`AIyting 当前线路不支持指定的 ${field}，请重新选择规格。`)
+  }
   return {
     catalogVersion: catalog.catalogVersion,
     modelId: model.id, routeId: route.id, aspectRatio: ratio, resolution, quality, count,
@@ -106,14 +111,14 @@ export async function registerGenerationTools(ctx, dispatch) {
   }
   ctx.tools.register(defineTool({
     name: 'aiyting_image_catalog',
-    description: 'List the live AIyting image models, their routes, credit prices per spec and availability. Read-only; never charges credits. Use before answering questions about models, prices or speed.',
+    description: 'List live image models, route IDs, available sizes and timings. Use aiyting_image_generate without maxCredits for a current price.',
     parameters: {},
     output: json,
     async execute(_args, exec) {
-      const catalog = await dispatch('list_models', {}, exec.signal)
+      const catalog = await dispatch('list_models', {}, exec.signal, exec)
       const lines = catalog.models.map((model) => {
         const routes = catalog.routes.filter((route) => route.modelId === model.id)
-        const detail = routes.map((route) => `${route.name}${route.available ? '' : '（不可用）'}：${route.resolutions.join('/')} · ${route.ratios.join(' ')} · 成功率 ${route.successRate == null ? '未知' : Math.round(route.successRate * 100) + '%'} · 约 ${route.avgSeconds == null ? '未知' : route.avgSeconds + 's'}`)
+        const detail = routes.map((route) => `${route.name}（${route.id}）${route.available ? '' : '（不可用）'}：${route.resolutions.join('/')} · ${route.ratios.join(' ')} · 成功率 ${route.successRate == null ? '未知' : Math.round(route.successRate * 100) + '%'} · 约 ${route.avgSeconds == null ? '未知' : route.avgSeconds + 's'}`)
         return `- ${model.name}（${model.id}）\n  ${detail.join('\n  ')}`
       })
       return { catalogVersion: catalog.catalogVersion, models: catalog.models.length, routes: catalog.routes.length,
@@ -122,11 +127,11 @@ export async function registerGenerationTools(ctx, dispatch) {
   }))
   ctx.tools.register(defineTool({
     name: 'aiyting_image_generate',
-    description: 'Submit one AIyting image generation task using this conversation panel settings. First call without maxCredits to get the price and confirm it with the user; then call again with maxCredits equal to or above that quote to actually submit (this charges credits). Omitting model fields uses the panel selection.',
+    description: 'Quote an image generation using the conversation settings. Omit maxCredits to receive the price and clientRequestId. After user confirmation, reuse that ID and the same settings with the exact credit ceiling the user approved to submit.',
     parameters: {
       prompt: { type: 'string', required: true, description: 'Final generation prompt in the user\u2019s words.' },
       modelId: { type: 'string', description: 'Optional model override, e.g. nano-banana-2.' },
-      routeId: { type: 'string', description: 'Optional route override, e.g. C线路.' },
+      routeId: { type: 'string', description: 'Exact route ID returned by aiyting_image_catalog for the selected model.' },
       aspectRatio: { type: 'string', description: 'Optional ratio override such as 1:1 or 16:9.' },
       resolution: { type: 'string', description: 'Optional resolution override such as 1K, 2K, 4K.' },
       quality: { type: 'string', enum: ['low', 'medium', 'high'], description: 'Optional quality override when the route supports it.' },
@@ -136,12 +141,12 @@ export async function registerGenerationTools(ctx, dispatch) {
     },
     output: json,
     async execute(args, exec) {
-      const value = await dispatch('submit_generation', { ...args, sessionId: sessionIdOf(exec) }, exec.signal)
+      const value = await dispatch('submit_generation', { ...args, sessionId: sessionIdOf(exec) }, exec.signal, exec)
       const head = value.needsConfirmation
         ? `报价：${value.quote.chargedCredits} 点 · ${describeSettings(value.settings)}`
         : `已提交：${value.task.batchId || value.clientRequestId} · ${describeSettings(value.settings)} · ${value.quote.chargedCredits} 点`
       const tail = value.needsConfirmation
-        ? `把点数告诉用户；用户同意后再调用一次并带上 maxCredits ≥ ${value.quote.chargedCredits} 才会真正扣费提交。`
+        ? `用户同意后，使用相同参数和请求号 ${value.clientRequestId}（clientRequestId），将 maxCredits 设为用户确认的点数上限。`
         : value.reused
           ? '这个请求号之前已经完成过，这里直接用本机任务记录回答，没有再次扣费。'
           : `提示词：${value.prompt}\n任务号已记到本机任务记录；之后即使对话或进程中断，也能用 aiyting_image_task 不带任务号找回。查询进度用 aiyting_image_task（waitSeconds 最多 50）。`
@@ -158,7 +163,7 @@ export async function registerGenerationTools(ctx, dispatch) {
     output: json,
     async execute(args, exec) {
       if (!args.batchId) {
-        const value = await dispatch('list_generations', { refresh: args.waitSeconds !== -1 }, exec.signal)
+        const value = await dispatch('list_generations', { refresh: args.waitSeconds !== -1 }, exec.signal, exec)
         const lines = value.batches.length
           ? value.batches.map((item) => `- ${item.batchId} · ${item.status}${item.terminal ? '' : '（未完成）'}`
             + `${item.chargedCredits != null ? ` · ${item.chargedCredits} 点` : ''}`
@@ -166,7 +171,7 @@ export async function registerGenerationTools(ctx, dispatch) {
           : ['本机还没有提交过 AIyting 任务。']
         return { ...value, text: `本机任务记录（${value.batches.length} 条，未完成 ${value.pending} 条）：\n${lines.join('\n')}\n\n带上 batchId 可以查详情或继续等待。` }
       }
-      const task = await dispatch('get_generation', { batchId: args.batchId, waitSeconds: args.waitSeconds }, exec.signal)
+      const task = await dispatch('get_generation', { batchId: args.batchId, waitSeconds: args.waitSeconds }, exec.signal, exec)
       const lines = [`状态：${task.status || '未知'}${task.terminal ? '' : '（仍在生成）'}`]
       if (task.chargedCredits != null) lines.push(`已扣：${task.chargedCredits} 点${task.refundedCredits ? ` · 返还 ${task.refundedCredits} 点` : ''}`)
       if (task.remainingCredits != null) lines.push(`剩余：${task.remainingCredits} 点`)

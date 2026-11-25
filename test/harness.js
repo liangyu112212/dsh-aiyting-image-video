@@ -8,7 +8,8 @@ export function memoryDomain(records = new Map()) {
   return { records, table: () => ({ get: (id) => records.get(id), put: async (id, value) => { records.set(id, structuredClone(value)) } }), close: async () => {} }
 }
 
-export async function harness(initialKey = 'test-only-not-a-real-key') {
+export async function harness(initialKey = 'test-only-not-a-real-key', options = {}) {
+  const matches = (list, name) => (list ?? []).some((entry) => name === entry || name === 'mcp__aiyting-ui__' + entry)
   let key = initialKey, onUpdated
   const calls = [], connections = [], cleanup = [], handlers = new Map(), definitions = new Map(), verified = []
   const domain = memoryDomain(), taskDomain = memoryDomain()
@@ -43,9 +44,10 @@ export async function harness(initialKey = 'test-only-not-a-real-key') {
       return connection
     },
     tools: {
-      get: () => ({}), register: (value) => definitions.set(value.name, value),
+      get: (name) => (matches(options.hideTools, name) ? undefined : ({})), register: (value) => definitions.set(value.name, value),
       execute: async (exec) => {
         calls.push(exec)
+        if (matches(options.failTools, exec.name)) return { isError: true, value: { content: [] } }
         const value = exec.name.endsWith('list_models') ? fixtureCatalog() : exec.name.endsWith('get_balance')
           ? { username: 'fixture-account', balanceCredits: 100, dailyLimitCredits: null, todaySpentCredits: 2, privateData: 'never-send' } : fixtureQuote()
         return { value: { content: [], structuredContent: value } }

@@ -64,7 +64,7 @@ export async function installRuntime(ctx, config, store, batches) {
   }
   // Only this private connection's namespace may supply tools or capabilities.
   // Another MCP server can expose identical raw tool names under other credentials.
-  const availableTools = () => (ctx.tools.schemas?.() || []).map((schema) => schema.name)
+  const availableTools = (agent, toolSet) => (ctx.tools.schemas?.(agent, toolSet) || []).map((schema) => schema.name)
     .filter((name) => typeof name === 'string' && name.startsWith(MCP_TOOL_PREFIX))
     .map((name) => name.slice(MCP_TOOL_PREFIX.length).replace(/^aiyting_/, ''))
   const capabilities = () => {
@@ -73,23 +73,28 @@ export async function installRuntime(ctx, config, store, batches) {
       balance: names.includes('get_balance'), generate: names.includes('generate'),
       task: names.includes('get_task') || names.includes('wait_for_task') }
   }
-  const query = async (name, args, signal, expectedRevision, timeoutMs = 35000) => {
+  const callMcp = async (name, args, signal, expectedRevision, timeoutMs = 35000, scope = {}) => {
     const current = await requireAccount(expectedRevision)
     // The first call after a cold start can lose its transport handshake while the
     // MCP client is still connecting; reads and idempotent submits get one retry.
     for (let attempt = 0; ; attempt += 1) {
-      await ensureConnection()
+      const connected = await ensureConnection()
+      if (connected.revision !== current.revision) throw new Error('AIyting 账号已变化，请刷新后重新确认。')
       const resolved = MCP_TOOL_PREFIX + name
-      if (!ctx.tools.get(resolved)) {
-        const names = availableTools(), wanted = name.replace(/^aiyting_/, '')
+      if (!ctx.tools.get(resolved, scope.agent, scope.toolSet)) {
+        const names = availableTools(scope.agent, scope.toolSet), wanted = name.replace(/^aiyting_/, '')
         if (wanted === 'generate' && names.length) {
-          throw new Error('AIyting 当前连接没有开放生图能力：需要带生图权限的接入密钥，并且当前 DSH 会话权限允许写操作（只读预设会隐藏生图工具）。')
+          throw new Error('AIyting 当前连接没有开放生图能力：当前登录账号的授权范围不含生图，或当前 DSH 会话权限为只读（只读预设会隐藏生图工具）。请在官网确认账号权限、并换到允许写操作的会话后重试。')
         }
-        throw new Error('AIyting MCP 暂未连接成功，请检查访问钥匙和网络后刷新目录。'
+        throw new Error('AIyting 暂时连不上，请先刷新目录；还是不行就在账号页重新登录或重新授权，一直不通请联系支持。'
           + (names.length ? `当前可用：${names.join('、')}。` : ''))
       }
-      const result = await ctx.tools.execute({ name: resolved, arguments: args, callId: 'aiyting-ui-' + randomUUID(),
-        signal: AbortSignal.any([signal, controller.signal, AbortSignal.timeout(timeoutMs)]) })
+      const callId = 'aiyting-ui-' + randomUUID()
+      const callSignal = AbortSignal.any([signal, controller.signal, AbortSignal.timeout(timeoutMs)])
+      // Newer DSH executors accept a batch of model calls, older ones accept one parsed call.
+      const result = typeof ctx.tools.setExecutor === 'function'
+        ? (await ctx.tools.execute({ ...scope, calls: [{ type: 'tool-call', id: callId, name: resolved, arguments: JSON.stringify(args) }], signal: callSignal })).results[0].result
+        : await ctx.tools.execute({ ...scope, name: resolved, arguments: args, callId, signal: callSignal })
       if ((await identity()).hash !== current.hash) throw new Error('AIyting 账号凭据已变化，请刷新目录。')
       if (result.isError) {
         // Only the two cheap discovery reads are safe to repeat blindly; quotes and
@@ -110,7 +115,13 @@ export async function installRuntime(ctx, config, store, batches) {
     return id
   }
   const selectionKey = (value) => JSON.stringify([value.catalogVersion, imageSettings(value)])
-  const dispatch = async (operation, payload = {}, signal) => {
+  const dispatch = async (operation, payload = {}, signal, exec) => {
+    const scope = exec && { agent: exec.agent, toolSet: exec.toolSet }
+    const query = (name, args, revision, timeoutMs) => callMcp(name, args, signal, revision, timeoutMs, scope)
+    const loadCatalog = async (revision) => {
+      const { data, current } = await query('aiyting_list_models', { media_type: 'image', detail: 'full' }, revision)
+      return { ...normalizeCatalog(data), accountRevision: current.revision }
+    }
     if (operation === 'get_connection') {
       const current = await identity()
       return { configured: Boolean(current.key), accountRevision: current.revision }
@@ -119,20 +130,19 @@ export async function installRuntime(ctx, config, store, batches) {
       const current = await identity()
       if (!current.key) return { configured: false, accountRevision: current.revision }
       try {
-        const { data } = await query('aiyting_get_balance', {}, signal, current.revision)
+        const { data } = await query('aiyting_get_balance', {}, current.revision)
         return { configured: true, accountRevision: current.revision, account: accountInfo(data), capabilities: capabilities() }
       } catch {
         await requireAccount(current.revision)
         return { configured: true, accountRevision: current.revision, account: null, capabilities: capabilities(),
-          connectionError: '连接暂不可用，请刷新或重新连接；钥匙需要 catalog:read 和 account:read 权限。' }
+          connectionError: '连接暂不可用，请刷新；还是不行就在账号页重新登录或重新授权，一直失败请联系支持。' }
       }
     }
     if (operation === 'list_models') {
-      const { data, current } = await query('aiyting_list_models', { media_type: 'image' }, signal)
-      return { ...normalizeCatalog(data), accountRevision: current.revision }
+      return loadCatalog(payload.accountRevision)
     }
     if (operation === 'estimate_cost') {
-      const { data, current } = await query('aiyting_estimate_cost', estimateArguments(payload), signal, payload.accountRevision)
+      const { data, current } = await query('aiyting_estimate_cost', estimateArguments(payload), payload.accountRevision)
       const quote = normalizeQuote(data, payload), receipt = randomUUID()
       receipts.set(receipt, { account: current.hash, key: selectionKey(payload), expires: Date.now() + 120000 })
       for (const [id, record] of receipts) if (record.expires < Date.now() || receipts.size > 128) receipts.delete(id)
@@ -142,10 +152,15 @@ export async function installRuntime(ctx, config, store, batches) {
       const current = await requireAccount(payload.accountRevision)
       const sessionId = sessionOf(payload), prompt = cleanPrompt(payload.prompt)
       // A retry after a crash must not pay twice: a finished request id answers from the ledger.
-      const known = await batches.findByRequest(current.hash, payload.clientRequestId)
+      const requestId = payload.clientRequestId ?? 'ui-' + randomUUID()
+      if (typeof requestId !== 'string' || !/^[A-Za-z0-9._:-]{8,120}$/.test(requestId)) {
+        throw new Error('AIyting 请求号须为 8 至 120 位字母、数字或 ._:-。')
+      }
+      const known = await batches.findByRequest(current.hash, requestId)
       if (known?.terminal && known.batchId) {
         const reuseSettings = known.settings || resolveSettings(payload, null,
-          normalizeCatalog((await query('aiyting_list_models', { media_type: 'image' }, signal)).data))
+          await loadCatalog(current.revision))
+        await requireAccount(current.revision)
         return { submitted: true, reused: true, clientRequestId: known.clientRequestId, prompt,
           settings: reuseSettings,
           quote: { chargedCredits: known.chargedCredits ?? 0, countPerRoute: reuseSettings.count || 1 },
@@ -153,24 +168,23 @@ export async function installRuntime(ctx, config, store, batches) {
             chargedCredits: known.chargedCredits, refundedCredits: known.refundedCredits, remainingCredits: known.remainingCredits,
             children: [], totalChildren: (known.media || []).length, error: null } }
       }
-      const catalog = normalizeCatalog((await query('aiyting_list_models', { media_type: 'image' }, signal)).data)
+      const catalog = await loadCatalog(current.revision)
       const stored = sessionId ? (await store.load(current.hash, sessionId)).settings : null
       const settings = resolveSettings(payload, stored, catalog)
-      const { data: quoted } = await query('aiyting_estimate_cost', estimateArguments(settings), signal)
+      const args = { ...estimateArguments(settings), prompt }
+      const { data: quoted } = await query('aiyting_estimate_cost', args, current.revision)
       const quote = normalizeQuote(quoted, settings)
       const price = { chargedCredits: quote.chargedCredits, countPerRoute: quote.countPerRoute }
-      if (payload.maxCredits == null) return { needsConfirmation: true, prompt, settings, quote: price }
+      if (payload.maxCredits == null) return { needsConfirmation: true, clientRequestId: requestId, prompt, settings, quote: price }
       if (typeof payload.maxCredits !== 'number' || !Number.isFinite(payload.maxCredits) || quote.chargedCredits > payload.maxCredits) {
         throw new Error(`AIyting 本次报价 ${quote.chargedCredits} 点，超过允许的 ${payload.maxCredits} 点；确认后可重新提交。`)
       }
-      const requestId = typeof payload.clientRequestId === 'string' && /^[A-Za-z0-9._:-]{8,120}$/.test(payload.clientRequestId)
-        ? payload.clientRequestId : 'ui-' + randomUUID()
       const { data } = await query('aiyting_generate', {
-        media_type: 'image', model_id: settings.modelId, route_ids: [settings.routeId], ratio: settings.aspectRatio,
-        ...(settings.resolution === '标准' ? {} : { resolution: settings.resolution }),
-        ...(settings.quality ? { quality: settings.quality } : {}),
-        count_per_route: settings.count, prompt, client_request_id: requestId,
-      }, signal, undefined, 90000)
+        ...args, client_request_id: requestId, max_credits: payload.maxCredits,
+      }, current.revision, 90000).catch((error) => {
+        const reason = error instanceof Error && error.message.startsWith('AIyting ') ? error.message : 'AIyting 未确认提交结果。'
+        throw new Error(`${reason} 请检查任务记录，重试须沿用相同参数和请求号 ${requestId}。`)
+      })
       await requireAccount(current.revision)
       const task = normalizeTask(data)
       await batches.remember(current.hash, { batchId: task.batchId, clientRequestId: requestId, settings: imageSettings(settings), task })
@@ -180,8 +194,8 @@ export async function installRuntime(ctx, config, store, batches) {
       const batchId = cleanBatchId(payload.batchId)
       const wait = Number.isInteger(payload.waitSeconds) ? Math.min(Math.max(payload.waitSeconds, 0), 50) : 0
       const name = wait ? 'aiyting_wait_for_task' : 'aiyting_get_task'
-      const { data, current } = await query(name, { batch_id: batchId, include_images: true, max_images: 16,
-        ...(wait ? { timeout_seconds: wait } : {}) }, signal, undefined, (wait + 30) * 1000)
+      const { data, current } = await query(name, { batch_id: batchId, include_images: false,
+        ...(wait ? { timeout_seconds: wait } : {}) }, payload.accountRevision, (wait + 30) * 1000)
       const task = normalizeTask(data)
       await batches.remember(current.hash, { batchId, task })
       return task
@@ -195,12 +209,13 @@ export async function installRuntime(ctx, config, store, batches) {
       const open = items.filter((item) => !item.terminal).slice(0, 3)
       for (const item of refresh ? open : []) {
         try {
-          const { data } = await query('aiyting_get_task', { batch_id: item.batchId, include_images: true, max_images: 16 },
-            signal, undefined, 30000)
+          const { data } = await query('aiyting_get_task', { batch_id: item.batchId, include_images: false },
+            current.revision, 30000)
           await batches.remember(current.hash, { batchId: item.batchId, task: normalizeTask(data) })
         } catch { /* keep the stored snapshot when the network or account is unavailable */ }
       }
       const latest = await batches.list(current.hash)
+      await requireAccount(current.revision)
       return { accountRevision: current.revision, batches: latest, pending: latest.filter((item) => !item.terminal).length }
     }
     if (operation === 'get_preferences') {
@@ -236,7 +251,7 @@ export async function installRuntime(ctx, config, store, batches) {
       await client.connect(transport)
       const available = await client.listTools()
       if (!['aiyting_list_models', 'aiyting_estimate_cost', 'aiyting_get_balance'].every((name) => available.tools.some((tool) => tool.name === name))) {
-        throw new Error('AIyting 钥匙需要 catalog:read 和 account:read 权限，请到官网重新创建。')
+        throw new Error('AIyting 授权缺少查看模型或余额的权限，请重新登录授权。')
       }
       return accountInfo(unwrapMcpResult(await client.callTool({ name: 'aiyting_get_balance', arguments: {} }, { signal })))
     } finally { await client.close().catch(() => {}) }
@@ -288,7 +303,7 @@ export async function installRuntime(ctx, config, store, batches) {
       if (payload?.accountRevision !== before.revision) throw new Error('AIyting 账号已变化，请刷新后重试。')
       if (operation === 'connect') {
         const key = typeof payload.key === 'string' ? payload.key.trim() : ''
-        if (key.length < 24 || key.length > 512 || /\s/.test(key)) throw new Error('AIyting 请粘贴完整的接入密钥。')
+        if (key.length < 24 || key.length > 512 || /\s/.test(key)) throw new Error('AIyting 连接凭据无效，请通过官网登录重新连接。')
         await verifyKey(key, signal)
         if ((await identity()).revision !== before.revision) throw new Error('AIyting 账号已变化，请刷新后重试。')
         beforeCommit?.()

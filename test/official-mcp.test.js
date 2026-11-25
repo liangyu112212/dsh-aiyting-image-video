@@ -46,6 +46,7 @@ test('installed official MCP client discovers and calls reads through real Cordi
     } else if (message.method === 'tools/call') {
       const name = message.params.name
       assert.ok(['aiyting_list_models', 'aiyting_estimate_cost', 'aiyting_get_balance'].includes(name), 'No generation is permitted in this test')
+      if (name === 'aiyting_list_models') assert.deepEqual(message.params.arguments, { media_type: 'image', detail: 'full' })
       const data = name === 'aiyting_list_models' ? fixtureCatalog() : name === 'aiyting_get_balance'
         ? { username: 'fixture-account', balanceCredits: 100, dailyLimitCredits: null, todaySpentCredits: 2 } : fixtureQuote()
       result = failQuote && name === 'aiyting_estimate_cost'
@@ -65,7 +66,12 @@ test('installed official MCP client discovers and calls reads through real Cordi
   let foreignCalls = 0
   try {
     await ctx.plugin(systemPrompt.default)
-    await ctx.plugin(tools.default, { mode: 'native' })
+    if (typeof tools.default.prototype.setExecutor === 'function') {
+      await ctx.plugin(tools.default)
+      await ctx.plugin(await load('@deepseek-ai/dsh-tool-executor-native'))
+    } else {
+      await ctx.plugin(tools.default, { mode: 'native' })
+    }
     await ctx.plugin(storage.default)
     await ctx.plugin(storageJson, { root: storageRoot })
     await ctx.plugin(storageDomain, { backend: 'json' })
@@ -151,7 +157,7 @@ test('installed official MCP client discovers and calls reads through real Cordi
     assert.ok(ctx.tools.get('mcp__aiyting__aiyting_list_models'))
     const unavailable = await run('list_models')
     assert.equal(unavailable.ok, false)
-    assert.match(unavailable.error.message, /MCP 暂未连接成功/)
+    assert.match(unavailable.error.message, /暂时连不上，请先刷新目录/)
     const disconnected = await run('get_account')
     assert.equal(disconnected.value.account, null)
     assert.deepEqual(disconnected.value.capabilities, { models: false, quote: false, balance: false, generate: false, task: false })
